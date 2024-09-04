@@ -687,12 +687,17 @@ SELECT z."value",
 		return res.rows.map(r => ({ value: r.value, score: parseFloat(r.score) }));
 	};
 
-	module.processSortedSet = async function (setKey, process, options) {
-		const client = await module.pool.connect();
+	function getSortedOptions(options) {
 		const batchSize = (options || {}).batch || 100;
 		const sort = options.reverse ? 'DESC' : 'ASC';
 		const min = options.min && options.min !== '-inf' ? options.min : null;
 		const max = options.max && options.max !== '+inf' ? options.max : null;
+		return { batchSize, sort, min, max };
+	}
+
+	module.processSortedSet = async function (setKey, process, options) {
+		const client = await module.pool.connect();
+		const { batchSize, sort, min, max } = getSortedOptions(options);
 		const cursor = client.query(new Cursor(`
 SELECT z."value", z."score"
   FROM "legacy_object_live" o
